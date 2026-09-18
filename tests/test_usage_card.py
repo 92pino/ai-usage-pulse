@@ -71,6 +71,9 @@ class UsageTests(unittest.TestCase):
             root=ET.fromstring(svg)
             self.assertGreater(int(root.attrib['height']),480)
             self.assertNotIn('<script>',svg)
+            self.assertGreaterEqual(svg.count('class="reveal"'),8)
+            self.assertIn('cubic-bezier(.22,.8,.24,1)',svg)
+            self.assertIn('prefers-reduced-motion: reduce',svg)
 
     def test_device_ledgers_merge_and_dedupe_shared_requests(self):
         with tempfile.TemporaryDirectory() as d:

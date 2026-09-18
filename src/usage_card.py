@@ -264,26 +264,58 @@ def render(data, title, theme, today):
            </defs>
            <style>
              @keyframes pulse {{ 0%,100% {{opacity: .9}} 50% {{opacity: .35}} }}
-             @keyframes trace {{ from {{stroke-dashoffset: 1000}} to {{stroke-dashoffset: 0}} }}
-             @keyframes rise {{ from {{opacity: .25}} to {{opacity: 1}} }}
+             @keyframes reveal {{
+               from {{opacity:0; transform:translateY(10px)}}
+               to {{opacity:1; transform:translateY(0)}}
+             }}
+             @keyframes trace {{
+               from {{stroke-dashoffset:1000}}
+               to {{stroke-dashoffset:0}}
+             }}
+             @keyframes lineFade {{from {{opacity:0}} to {{opacity:1}}}}
+             @keyframes cellIn {{
+               from {{opacity:0; transform:scale(.72)}}
+               to {{opacity:1; transform:scale(1)}}
+             }}
+             .reveal {{
+               opacity:0;
+               animation:reveal .72s cubic-bezier(.22,.8,.24,1) forwards;
+             }}
              .pulse {{animation: pulse 3s ease-in-out infinite}}
-             .trace {{stroke-dasharray: 1000; animation: trace 2.4s ease-out 1}}
-             .cell {{animation: rise 1.6s ease-out 1}}
-             @media (prefers-reduced-motion: reduce) {{.pulse,.trace,.cell {{animation: none}}}}
+             .trace {{
+               opacity:0;
+               stroke-dasharray:1000;
+               stroke-dashoffset:1000;
+               animation:trace 1.45s cubic-bezier(.22,.8,.24,1) 360ms forwards,
+                         lineFade .3s ease-out 330ms forwards;
+             }}
+             .cell {{
+               opacity:0;
+               transform-box:fill-box;
+               transform-origin:center;
+               animation:cellIn .34s ease-out forwards;
+             }}
+             @media (prefers-reduced-motion: reduce) {{
+               .reveal,.pulse,.trace,.cell {{animation:none}}
+               .reveal,.trace,.cell {{opacity:1;transform:none;stroke-dashoffset:0}}
+             }}
            </style>''',
            f'<rect x=".5" y=".5" width="899" height="{height-1}" rx="22" fill="{bg}" stroke="{border}"/>',
            f'<g clip-path="url(#frame)"><path d="M0 1H900" stroke="url(#edge)" stroke-width="5"/><rect width="900" height="255" fill="url(#wash)"/></g>',
            '<g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">']
     def text(x,y,value,size=12,color=muted,weight=400):
         out.append(f'<text x="{x}" y="{y}" font-size="{size}" fill="{color}" font-weight="{weight}">{escape(str(value))}</text>')
+    out.append('<g class="reveal" style="animation-delay:40ms">')
     text(30,36,'AI / ACTIVITY MONITOR',10,cyan,700)
     text(30,66,title[:48],23,fg,700)
     out.append(f'<rect x="695" y="27" width="175" height="28" rx="14" fill="{panel}" stroke="{border}"/><circle class="pulse" cx="711" cy="41" r="3.5" fill="{green}"/>')
     text(723,45,'LOCAL LOG SNAPSHOT',9,green,600)
+    out.append('</g><g class="reveal" style="animation-delay:120ms">')
     text(30,108,'TOTAL TOKENS PROCESSED',10,muted,600)
     text(26,169,compact(total),64,fg,700)
     text(32,197,'INPUT + OUTPUT + CACHE',10,cyan,600)
     text(32,226,f'{data["active_days"]} active days  /  {len(tools)} tools tracked',12)
+    out.append('</g><g class="reveal" style="animation-delay:210ms">')
     text(475,103,'30-DAY TOKEN PULSE',10,cyan,600)
     text(752,103,compact(data['last_30_days']),14,fg,700)
     for y in (125,170,215):
@@ -293,11 +325,13 @@ def render(data, title, theme, today):
     out.append(f'<circle class="pulse" cx="{x}" cy="{y}" r="7" fill="{cyan}" opacity=".2"/><circle cx="{x}" cy="{y}" r="3" fill="{cyan}"/>')
     text(475,243,(today-timedelta(days=29)).strftime('%b %d'),9)
     text(810,243,'TODAY',9)
+    out.append('</g><g class="reveal" style="animation-delay:330ms">')
     for x,label,value,note,color in [(30,'LAST 7 DAYS',compact(week),trend,cyan),(316,'CURRENT STREAK',f'{streak} DAYS','Through today or yesterday',green),(602,'TODAY',compact(values[-1]),'Recorded in your local timezone',violet)]:
         out.append(f'<rect x="{x}" y="268" width="268" height="91" rx="12" fill="{panel}" stroke="{border}"/><path d="M{x+16} 287h16" stroke="{color}" stroke-width="3" stroke-linecap="round"/>')
         text(x+41,290,label,9,muted,600)
         text(x+16,324,value,26,color,700)
         text(x+16,344,note,10)
+    out.append('</g><g class="reveal" style="animation-delay:460ms">')
     text(30,389,'TOKEN FLOW',10,muted,700)
     x=30
     colors=[cyan,violet,green,amber]
@@ -306,6 +340,7 @@ def render(data, title, theme, today):
         out.append(f'<rect x="{x:.2f}" y="401" width="{width:.2f}" height="7" fill="{colors[i]}"/>')
         x+=width
         text(30+i*210,431,f'{k.replace("_"," ").title()}  {compact(data["totals"][k])}',11,colors[i])
+    out.append('</g><g class="reveal" style="animation-delay:580ms">')
     text(30,467,'CONSISTENCY MAP',10,muted,700)
     text(371,467,'26 WEEKS',9)
     start=today-timedelta(days=(today.weekday()+1)%7)-timedelta(weeks=25)
@@ -317,7 +352,8 @@ def render(data, title, theme, today):
             n=data['daily'].get(day.isoformat(),{}).get('total',0)
             level=0 if not n else min(4,max(1,int((n/max_day)**.5*4)))
             stroke=f' stroke="{cyan}" stroke-width="1"' if day==today else ''
-            out.append(f'<rect class="cell" x="{30+w*16}" y="{481+d*13}" width="12" height="9" rx="2" fill="{ramp[level]}"{stroke}><title>{day.isoformat()}: {n:,} tokens</title></rect>')
+            out.append(f'<rect class="cell" style="animation-delay:{650+w*18+d*4}ms" x="{30+w*16}" y="{481+d*13}" width="12" height="9" rx="2" fill="{ramp[level]}"{stroke}><title>{day.isoformat()}: {n:,} tokens</title></rect>')
+    out.append('</g><g class="reveal" style="animation-delay:690ms">')
     text(486,467,'TOOL MOMENTUM',10,muted,700)
     text(798,467,'ALL TIME',9)
     for i,(name,usage) in enumerate(tools):
@@ -326,10 +362,11 @@ def render(data, title, theme, today):
         text(486,y,name[:28],12,fg,600)
         text(781,y,compact(usage['total']),12,color,700)
         out.append(f'<rect x="486" y="{y+10}" width="354" height="5" rx="2" fill="{border}"/><rect x="486" y="{y+10}" width="{354*usage["total"]/total if total else 0:.2f}" height="5" rx="2" fill="{color}"/>')
+    out.append('</g><g class="reveal" style="animation-delay:820ms">')
     out.append(f'<path d="M30 {height-39}H870" stroke="{border}"/>')
     text(30,height-17,f'{data["timezone"]} / {data["updated_at"][:10]} / Local log snapshot',9)
     text(602,height-17,'CACHE INCLUDED · NO BILLING ESTIMATE',9)
-    out.append('</g></svg>')
+    out.append('</g></g></svg>')
     return '\n'.join(out)
 
 
@@ -354,7 +391,18 @@ def render_variant(data, title, theme, today, variant):
          <linearGradient id="wash" x2="1" y2="1"><stop stop-color="{cyan}" stop-opacity=".13"/><stop offset="1" stop-color="{violet}" stop-opacity=".02"/></linearGradient>
          <linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop stop-color="{cyan}" stop-opacity=".25"/><stop offset="1" stop-color="{cyan}" stop-opacity="0"/></linearGradient>
          <clipPath id="frame"><rect x="1" y="1" width="{width-2}" height="{height-2}" rx="19"/></clipPath></defs>
-         <style>@keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.35}}}}@keyframes trace{{from{{stroke-dashoffset:1000}}to{{stroke-dashoffset:0}}}}.pulse{{animation:pulse 3s ease-in-out infinite}}.trace{{stroke-dasharray:1000;animation:trace 2s ease-out}}@media(prefers-reduced-motion:reduce){{.pulse,.trace{{animation:none}}}}</style>''',
+         <style>
+           @keyframes pulse{{0%,100%{{opacity:1}}50%{{opacity:.35}}}}
+           @keyframes reveal{{from{{opacity:0;transform:translateY(7px)}}to{{opacity:1;transform:translateY(0)}}}}
+           @keyframes trace{{from{{stroke-dashoffset:1000}}to{{stroke-dashoffset:0}}}}
+           @keyframes lineFade{{from{{opacity:0}}to{{opacity:1}}}}
+           @keyframes cellIn{{from{{opacity:0;transform:scale(.75)}}to{{opacity:1;transform:scale(1)}}}}
+           .reveal{{opacity:0;animation:reveal .68s cubic-bezier(.22,.8,.24,1) forwards}}
+           .pulse{{animation:pulse 3s ease-in-out infinite}}
+           .trace{{opacity:0;stroke-dasharray:1000;stroke-dashoffset:1000;animation:trace 1.25s cubic-bezier(.22,.8,.24,1) 300ms forwards,lineFade .3s ease-out 270ms forwards}}
+           .cell{{opacity:0;transform-box:fill-box;transform-origin:center;animation:cellIn .3s ease-out forwards}}
+           @media(prefers-reduced-motion:reduce){{.reveal,.pulse,.trace,.cell{{animation:none}}.reveal,.trace,.cell{{opacity:1;transform:none;stroke-dashoffset:0}}}}
+         </style>''',
          f'<rect x=".5" y=".5" width="{width-1}" height="{height-1}" rx="19" fill="{bg}" stroke="{border}"/>',
          f'<g clip-path="url(#frame)"><rect width="{width}" height="{height}" fill="url(#wash)"/><path d="M0 1H{width}" stroke="url(#edge)" stroke-width="4"/></g>',
          '<g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">']
@@ -380,14 +428,16 @@ def render_variant(data, title, theme, today, variant):
                 if day>today:continue
                 n=data['daily'].get(day.isoformat(),{}).get('total',0)
                 level=0 if not n else min(4,max(1,int((n/peak)**.5*4)))
-                out.append(f'<rect x="{x+col*w/26:.2f}" y="{y+row*h/7:.2f}" width="{w/26-2:.2f}" height="{h/7-2:.2f}" rx="1.5" fill="{ramp[level]}"><title>{day}: {n:,} tokens</title></rect>')
+                out.append(f'<rect class="cell" style="animation-delay:{420+col*16+row*3}ms" x="{x+col*w/26:.2f}" y="{y+row*h/7:.2f}" width="{w/26-2:.2f}" height="{h/7-2:.2f}" rx="1.5" fill="{ramp[level]}"><title>{day}: {n:,} tokens</title></rect>')
     def metric(x,y,label,value,color=cyan):
         text(x,y,label,8,muted,600)
         text(x,y+23,value,21,color,700)
     # Minimal brand line gives each layout space for an expressive main composition.
+    out.append('<g class="reveal" style="animation-delay:40ms">')
     out.append(f'<path d="M21 30l5-9-1 6h6l-6 9 1-6z" fill="{cyan}"/>')
     heading=title if len(title)<=27 else title[:26]+'…'
     text(38,32,heading,12,fg,600)
+    out.append('</g><g class="reveal" style="animation-delay:140ms">')
     if variant=='full':
         text(24,66,'LIFETIME TOKEN FLOW',9,cyan,600)
         text(20,126,compact(total),58,fg,700)
@@ -449,7 +499,7 @@ def render_variant(data, title, theme, today, variant):
         text(24,256,'BUILDING RHYTHM / 26 WEEKS',8,green,600)
         heatmap(24,266,375,51)
         text(396,32,'MINI MONITOR',8,cyan,600,'end')
-    out.append('</g></svg>')
+    out.append('</g></g></svg>')
     return '\n'.join(out)
 
 
