@@ -103,16 +103,20 @@ python3 src/usage_card.py --tools imports --device macbook --import-json /path/t
 
 ## GitHub 프로필에 적용
 
-가장 쉬운 방법은 프로필 저장소의 로컬 경로와 이 컴퓨터의 고정 ID만 지정해 갱신 스크립트를 실행하는 것입니다.
+GitHub CLI 로그인 후 컴퓨터 이름을 하나 정해 최초 한 번만 설정합니다.
 
 ```sh
-PROFILE_REPO=/path/to/사용자명 \
-USAGE_CARD_DEVICE=macbook-home \
-USAGE_CARD_VARIANT=combo \
-scripts/update_profile.sh
+gh auth login
+./setup.sh macbook-home
 ```
 
-이 명령은 카드 생성, README 등록, commit, push를 한 번에 수행합니다. README에는 관리용 주석 사이에 카드가 들어갑니다.
+이후에는 아래 명령 하나만 실행합니다.
+
+```sh
+./update.sh
+```
+
+`setup.sh`는 GitHub 사용자명을 자동 감지하고, 프로필 저장소와 비공개 원장 저장소를 준비한 뒤 첫 카드를 게시합니다. `update.sh`는 두 저장소의 pull, 로컬 로그 집계, 여러 컴퓨터 원장 병합, SVG 생성, commit, push를 모두 처리합니다. README에는 관리용 주석 사이에 카드가 들어갑니다.
 
 ```html
 <!-- AI_USAGE_CARD:START -->
@@ -132,7 +136,6 @@ scripts/update_profile.sh
 | `grass` | 423×195 활동 카드 |
 | `half-grass` | 423×335 세로형 |
 | `split` | `half`와 `grass`를 한 줄에 배치 |
-| `none` | README를 수정하지 않고 카드만 갱신 |
 
 README 등록만 따로 하려면 다음 명령을 사용합니다. 이 명령은 commit이나 push를 수행하지 않습니다.
 
@@ -156,47 +159,29 @@ https://raw.githubusercontent.com/사용자명/저장소명/main/cards/ai-usage-
 python3 src/usage_card.py --output /path/to/profile-repo/cards
 ```
 
-정기 갱신은 **사용 로그가 있는 컴퓨터**에서 동일 명령을 스케줄링하세요. GitHub 호스팅 Actions 러너는 개인 컴퓨터의 로그에 접근할 수 없습니다. `--state-dir`과 `--output`은 스케줄러에서 절대 경로를 사용하는 것이 좋습니다.
+정기 갱신은 **사용 로그가 있는 컴퓨터**에서 `update.sh`를 스케줄링하세요. GitHub 호스팅 Actions 러너는 개인 컴퓨터의 로그에 접근할 수 없습니다.
 
 ## 여러 컴퓨터에서 하나의 카드 갱신
 
-프로필 저장소의 `cards/devices/`를 장치 원장 공유 위치로 사용합니다. 각 컴퓨터는 같은 프로필 저장소를 clone한 뒤 서로 다른 장치 ID로 실행합니다.
+각 컴퓨터에서 이 저장소를 clone하고 서로 다른 이름으로 설정합니다.
 
 ```sh
-# 집 MacBook
-python3 src/usage_card.py \
-  --device macbook-home \
-  --state-dir /path/to/USERNAME/cards/devices \
-  --output /path/to/USERNAME/cards
+# 첫 번째 컴퓨터
+./setup.sh macbook-home
 
-# 업무용 컴퓨터
-python3 src/usage_card.py \
-  --device work-desktop \
-  --state-dir /path/to/USERNAME/cards/devices \
-  --output /path/to/USERNAME/cards
+# 두 번째 컴퓨터
+./setup.sh work-desktop
 ```
 
-각 실행은 자기 파일만 갱신합니다.
-
-```text
-cards/devices/macbook-home.json
-cards/devices/work-desktop.json
-```
-
-카드는 폴더 안의 모든 장치 원장을 병합해 생성합니다. 동일한 요청이 두 컴퓨터 로그에 복사되어 있고 식별 해시도 같다면 전체 합계에서는 한 번만 반영됩니다. 서로 다른 서비스가 동일 요청에 다른 ID를 부여한 경우에는 자동으로 판별할 수 없습니다.
-
-Git pull, 카드 생성, commit, push까지 처리하는 [갱신 스크립트](scripts/update_profile.sh)도 포함되어 있습니다.
+그다음부터는 어느 컴퓨터에서든 동일합니다.
 
 ```sh
-chmod +x scripts/update_profile.sh
-PROFILE_REPO=/path/to/USERNAME \
-USAGE_CARD_DEVICE=macbook-home \
-scripts/update_profile.sh
+./update.sh
 ```
 
-다른 컴퓨터에서는 `USAGE_CARD_DEVICE=work-desktop`처럼 다른 ID를 사용합니다. 스크립트는 프로필 저장소에 커밋되지 않은 변경이 있으면 중단하고, 먼저 `git pull --rebase`를 실행합니다. 두 컴퓨터가 동시에 push하지 않도록 자동 실행 시간을 몇 분씩 다르게 설정하세요.
+최초 설정 시 `GitHub사용자명/ai-usage-pulse-data` 비공개 저장소가 자동 생성됩니다. 장치 원장은 이 비공개 저장소에서 합쳐지고, 공개 프로필 저장소에는 선택한 라이트·다크 SVG와 README 블록만 올라갑니다. 프롬프트, 코드, 요청 식별자, 모델별 원장은 공개되지 않습니다.
 
-`cards/devices/*.json`은 공개 프로필 저장소에 함께 올라갑니다. 프롬프트와 코드는 없지만 날짜, 도구명, 모델명, 토큰 수, 해시 식별자가 포함됩니다. 이 정보도 공개하고 싶지 않다면 장치 원장을 별도의 비공개 Git 저장소나 개인 동기화 폴더에 두고, 생성된 SVG만 프로필 저장소에 복사해야 합니다.
+같은 장치 이름을 두 컴퓨터에서 사용하면 원장이 섞일 수 있으므로 각 컴퓨터마다 고유한 이름을 사용하세요. 두 컴퓨터의 자동 실행 시간은 몇 분씩 다르게 설정하는 것이 좋습니다.
 
 ## 집계 원칙과 제한
 

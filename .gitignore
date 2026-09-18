@@ -1,5 +1,6 @@
 .usage-state/
 .omx/
+.runtime/
 /cards/
 /previews/*.svg
 __pycache__/

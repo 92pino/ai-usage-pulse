@@ -106,16 +106,20 @@ Every record needs nonempty `source`, `id`, `tool`, `model`, and timezone-aware 
 
 ## Install on a GitHub profile
 
-The easiest setup needs only the local path to your profile repository and a permanent device ID:
+Sign in with GitHub CLI and choose a permanent name for this computer once:
 
 ```sh
-PROFILE_REPO=/path/to/USERNAME \
-USAGE_CARD_DEVICE=macbook-home \
-USAGE_CARD_VARIANT=combo \
-scripts/update_profile.sh
+gh auth login
+./setup.sh macbook-home
 ```
 
-This pulls the profile repository, collects usage, generates cards, installs the README block, commits, and pushes. The managed block is enclosed by these markers:
+After setup, every refresh is one command:
+
+```sh
+./update.sh
+```
+
+`setup.sh` detects your GitHub username, prepares the profile and private ledger repositories, and publishes the first card. `update.sh` pulls both repositories, collects local logs, merges every computer, generates the SVGs, commits, and pushes. The managed block is enclosed by these markers:
 
 ```html
 <!-- AI_USAGE_CARD:START -->
@@ -135,7 +139,6 @@ Future runs replace only that block. `USAGE_CARD_VARIANT` accepts:
 | `grass` | 423×195 activity card |
 | `half-grass` | 423×335 vertical card |
 | `split` | `half` and `grass` side by side |
-| `none` | Update files without editing README |
 
 To edit only the README without committing or pushing:
 
@@ -145,31 +148,29 @@ python3 scripts/install_readme.py \
   --variant combo
 ```
 
-GitHub-hosted Actions runners cannot read logs stored on your computers. Schedule the updater on each computer that has local usage logs.
+GitHub-hosted Actions runners cannot read logs stored on your computers. Schedule `update.sh` on each computer that has local usage logs.
 
 ## Multiple computers, one card
 
-Use `cards/devices/` in the profile repository as the shared ledger directory. Clone the same profile repository on each computer and assign a different permanent device ID.
+Clone this repository on each computer and use a different permanent device name:
 
 ```sh
-# Home MacBook
-python3 src/usage_card.py \
-  --device macbook-home \
-  --state-dir /path/to/USERNAME/cards/devices \
-  --output /path/to/USERNAME/cards
+# First computer
+./setup.sh macbook-home
 
-# Work computer
-python3 src/usage_card.py \
-  --device work-desktop \
-  --state-dir /path/to/USERNAME/cards/devices \
-  --output /path/to/USERNAME/cards
+# Second computer
+./setup.sh work-desktop
 ```
 
-Each computer updates only its own file, such as `cards/devices/macbook-home.json`. Card generation merges every device ledger in the directory. Identical request hashes across devices are counted once. If different services assign different IDs to the same request, the script cannot infer that they are duplicates.
+After that, run the same command on either computer:
 
-Run scheduled updates a few minutes apart to reduce Git push conflicts. The updater refuses to continue when the profile repository already has uncommitted changes and runs `git pull --rebase` before generation.
+```sh
+./update.sh
+```
 
-`cards/devices/*.json` contains no prompts or source code, but it does contain dates, tool names, model names, token counts, and hashed request identifiers. If you do not want that metadata in a public profile repository, keep ledgers in a private Git repository or personal sync folder and copy only the generated SVG files to your profile.
+On first setup, the script creates a private `GITHUB_USER/ai-usage-pulse-data` repository. Device ledgers are merged there. Only the selected light and dark SVG files and the managed README block are pushed to the public profile repository. Prompts, source code, request identifiers, and model-level ledgers remain private.
+
+Use a unique device name on every computer and stagger scheduled runs by a few minutes to reduce push conflicts.
 
 ## Aggregation rules and limitations
 
