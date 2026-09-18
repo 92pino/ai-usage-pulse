@@ -1,0 +1,7 @@
+.usage-state/
+.omx/
+/cards/
+/previews/*.svg
+__pycache__/
+*.pyc
+.DS_Store

@@ -1,0 +1,222 @@
+# AI Usage Pulse
+
+[English](README.en.md) · 한국어
+
+Codex, Claude Code, Gemini CLI 등 로컬 AI 사용 기록을 분석해 GitHub 프로필용 SVG 대시보드를 만듭니다. 여러 컴퓨터의 장치별 원장을 하나로 합치며, Python 3.10+ 표준 라이브러리만 사용하고 수집 중 외부 API를 호출하지 않습니다.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./previews/dashboard-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="./previews/dashboard-light.png">
+  <img alt="AI coding token usage" src="./previews/dashboard-light.png" width="900">
+</picture>
+
+## 카드 디자인
+
+네온 포인트, 30일 추이 그래프, 최근 7일 대비 증감률, 연속 활동일, 오늘 사용량, 도구별 사용 비중을 표시합니다. 연속 활동일은 오늘 또는 어제까지 이어지는 기록을 기준으로 합니다. 최근 7일에는 아직 끝나지 않은 오늘도 포함됩니다.
+
+SVG에는 그래프 등장 및 상태 점의 은은한 CSS 애니메이션이 포함되어 있습니다. 모션 감소 설정을 존중하며 애니메이션을 지원하지 않는 뷰어에서는 정적으로 표시됩니다. GitHub 게시 후의 애니메이션 동작은 아직 확인하지 않았습니다. 카드 숫자는 생성 시점의 스냅샷이며 실시간 갱신을 의미하지 않습니다.
+
+## 크기 선택
+
+실행할 때 아래 7종을 라이트·다크 테마로 모두 생성합니다(총 14개 SVG). `dashboard`와 `combo`는 같은 전체 대시보드를 서로 다른 파일명으로 제공합니다.
+
+| 레이아웃 | 크기 | 파일명 (`THEME`은 `dark` 또는 `light`) |
+| --- | --- | --- |
+| dashboard | 900 × 626 이상 | `ai-usage-THEME.svg` |
+| full | 846 × 225 | `ai-usage-full-THEME.svg` |
+| combo | 900 × 626 이상 | `ai-usage-combo-THEME.svg` |
+| compact | 846 × 195 | `ai-usage-compact-THEME.svg` |
+| half | 423 × 195 | `ai-usage-half-THEME.svg` |
+| grass | 423 × 195 | `ai-usage-grass-THEME.svg` |
+| half-grass | 423 × 335 | `ai-usage-half-grass-THEME.svg` |
+
+기존 대시보드의 큰 숫자·네온 포인트·30일 추이 그래프를 각 크기에 맞춰 재구성했습니다.
+
+- `full`: 큰 누적 숫자, 넓은 추이 그래프, 최근 사용량 패널, 토큰 구성 칩.
+- `combo`: 큰 숫자, 30일 추이, 지표 타일, 토큰 구성, 활동 잔디를 모두 담은 전체 대시보드. 기본값.
+- `compact`: 누적 숫자 → 추이 그래프 → 활동 잔디 패널의 가로 구성.
+- `half`: 숫자와 스파크라인, 하단의 이번 주·오늘·활동일 통계.
+- `grass`: 활동일 숫자, 30일 추이, 26주 잔디를 합친 활동 카드.
+- `half-grass`: 숫자·그래프·통계 타일·잔디를 담은 세로 미니 대시보드.
+
+기존 파일명과 크기를 유지하므로 README 링크는 그대로 사용할 수 있습니다. 도구별 상세 분석은 기본 대시보드와 JSON에서 확인할 수 있습니다.
+
+실행 후 출력 폴더에 생성되는 `README-snippet.md`에서 원하는 레이아웃의 블록을 복사할 수 있습니다. `half` + `grass`를 나란히 배치하는 코드도 포함됩니다.
+
+## 지원 범위
+
+모든 도구의 데이터를 받을 수 있는 공통 가져오기 형식을 지원합니다. **모든 AI 제품에 대한 자동 연동을 제공한다는 뜻은 아닙니다.**
+
+| 도구 | 수집 방식 | 상태 |
+| --- | --- | --- |
+| Codex CLI / 데스크톱의 로컬 세션 | `$CODEX_HOME/sessions`, `archived_sessions` JSONL | 실제 로컬 로그 검증 |
+| Claude Code | `$CLAUDE_CONFIG_DIR/projects` JSONL | 실제 로컬 로그 검증 |
+| Gemini CLI | `~/.gemini/tmp/*/chats/session-*.json`, `.jsonl` | 공식 스키마 기반, 합성 데이터 검증 |
+| Cursor, GitHub Copilot, Windsurf, OpenCode, Cline, Roo Code, Aider 등 | 사용량 내보내기/API 응답을 아래 공통 JSON으로 변환 | 공통 importer 제공, 제품별 자동 변환기 미구현 |
+| ChatGPT, Claude, Gemini 웹 및 기타 제품 | 토큰 수를 제공하는 내보내기/API가 있을 때 공통 JSON으로 변환 | 토큰 수가 없는 대화 기록만으로 정확한 집계 불가 |
+
+요청 횟수, 크레딧, 이용 한도 퍼센트를 토큰으로 환산하지 않습니다. API와 클라이언트 양쪽에 같은 요청이 기록된 경우 하나의 소스만 선택해야 합니다.
+
+## 실행
+
+```sh
+python3 src/usage_card.py --device macbook-home --title "My AI Coding Usage"
+```
+
+`--device`는 컴퓨터마다 겹치지 않는 영구 ID입니다. 예: `macbook-home`, `macbook-work`, `desktop`. 한 번 사용한 ID는 나중에 바꾸지 않는 것이 좋습니다. 생략하면 `USAGE_CARD_DEVICE` 환경변수, 그마저 없으면 현재 hostname을 사용합니다.
+
+특정 도구만 수집하려면 별도 원장을 지정합니다.
+
+```sh
+python3 src/usage_card.py --tools codex --device macbook --state-dir .usage-state/codex-devices
+python3 src/usage_card.py --tools gemini --device macbook --state-dir .usage-state/gemini-devices
+```
+
+`--codex-home`, `--claude-home`, `--gemini-home`으로 경로를 변경할 수 있습니다. 날짜 기준은 기본 `Asia/Seoul`이며 `--timezone`으로 변경합니다. 같은 장치 원장 폴더에 서로 다른 시간대나 `--tools` 설정을 혼합하지 않습니다. 이전 버전의 `.usage-state/ledger.json`은 첫 실행 시 현재 장치 원장으로 자동 복사됩니다.
+
+샘플 미리보기는 별도 출력 경로에 생성합니다. 실제 사용 원장에는 반영되지 않습니다.
+
+```sh
+python3 src/usage_card.py --demo --output /tmp/ai-usage-demo
+```
+
+## 모든 도구의 사용량 가져오기
+
+[예제 JSON](examples/import-usage.json)을 참고해 제품의 사용량 내보내기/API 데이터를 변환합니다. 예제의 숫자는 가상 데이터입니다.
+
+```sh
+python3 src/usage_card.py --import-json /path/to/cursor-normalized.json --import-json /path/to/copilot-normalized.json
+# 로컬 로그 없이 가져온 데이터만 사용
+python3 src/usage_card.py --tools imports --device macbook --import-json /path/to/usage.json --state-dir .usage-state/import-devices
+```
+
+각 레코드는 `source`, `id`, `tool`, `model`, 시간대가 포함된 `timestamp`, 그리고 다음 네 개의 **서로 중복되지 않는** 정수 필드가 필요합니다.
+
+| 필드 | 의미 |
+| --- | --- |
+| `input` | 캐시 읽기/쓰기를 제외한 입력 토큰 |
+| `output` | 출력 토큰, reasoning이 별도 제공되는 제품은 이를 포함 |
+| `cache_read` | 캐시에서 읽은 입력 토큰 |
+| `cache_write` | 캐시에 기록한 입력 토큰 |
+
+`source + tool + id`는 한 요청의 고정 식별자입니다. 동일 요청을 다시 가져오면 중복 합산하지 않습니다. 일별 합계 데이터라면 `id`를 `날짜+모델`로 고정하고, 서로 겹치는 기간 합계를 넣지 마세요. 여러 계정/컴퓨터는 서로 다른 `source`를 사용합니다. 같은 요청을 다른 소스명으로 가져오거나 자동 수집 로그와 중복해서 가져오면 중복 집계됩니다.
+
+## GitHub 프로필에 적용
+
+가장 쉬운 방법은 프로필 저장소의 로컬 경로와 이 컴퓨터의 고정 ID만 지정해 갱신 스크립트를 실행하는 것입니다.
+
+```sh
+PROFILE_REPO=/path/to/사용자명 \
+USAGE_CARD_DEVICE=macbook-home \
+USAGE_CARD_VARIANT=combo \
+scripts/update_profile.sh
+```
+
+이 명령은 카드 생성, README 등록, commit, push를 한 번에 수행합니다. README에는 관리용 주석 사이에 카드가 들어갑니다.
+
+```html
+<!-- AI_USAGE_CARD:START -->
+...자동으로 관리되는 카드...
+<!-- AI_USAGE_CARD:END -->
+```
+
+다시 실행하거나 카드 종류를 변경해도 기존 README의 다른 내용은 유지하고 이 영역만 교체합니다. `USAGE_CARD_VARIANT`에는 다음 값을 사용할 수 있습니다.
+
+| 값 | 표시 형태 |
+| --- | --- |
+| `dashboard` | 큰 전체 대시보드 (`combo`와 동일한 구성) |
+| `full` | 846×225 가로형 |
+| `combo` | 첨부 예시와 같은 전체 대시보드, 기본값 |
+| `compact` | 추이와 잔디를 합친 846×195 가로형 |
+| `half` | 423×195 핵심 지표 |
+| `grass` | 423×195 활동 카드 |
+| `half-grass` | 423×335 세로형 |
+| `split` | `half`와 `grass`를 한 줄에 배치 |
+| `none` | README를 수정하지 않고 카드만 갱신 |
+
+README 등록만 따로 하려면 다음 명령을 사용합니다. 이 명령은 commit이나 push를 수행하지 않습니다.
+
+```sh
+python3 scripts/install_readme.py \
+  --repo /path/to/사용자명 \
+  --variant combo
+```
+
+수동으로 적용하려면 생성된 SVG를 프로필 저장소의 `cards/` 폴더에 복사한 뒤 출력 폴더의 `README-snippet.md`에서 원하는 `<picture>` 블록을 README.md에 붙여 넣습니다.
+
+카드를 다른 저장소에 보관한다면 상대 경로 대신 다음 형태의 주소를 사용합니다. 기본 브랜치가 다르면 `main`을 변경하세요.
+
+```text
+https://raw.githubusercontent.com/사용자명/저장소명/main/cards/ai-usage-dark.svg
+```
+
+이 도구는 자동 push나 프로필 수정은 하지 않습니다. 생성 위치를 로컬 프로필 저장소로 직접 지정할 수도 있습니다.
+
+```sh
+python3 src/usage_card.py --output /path/to/profile-repo/cards
+```
+
+정기 갱신은 **사용 로그가 있는 컴퓨터**에서 동일 명령을 스케줄링하세요. GitHub 호스팅 Actions 러너는 개인 컴퓨터의 로그에 접근할 수 없습니다. `--state-dir`과 `--output`은 스케줄러에서 절대 경로를 사용하는 것이 좋습니다.
+
+## 여러 컴퓨터에서 하나의 카드 갱신
+
+프로필 저장소의 `cards/devices/`를 장치 원장 공유 위치로 사용합니다. 각 컴퓨터는 같은 프로필 저장소를 clone한 뒤 서로 다른 장치 ID로 실행합니다.
+
+```sh
+# 집 MacBook
+python3 src/usage_card.py \
+  --device macbook-home \
+  --state-dir /path/to/USERNAME/cards/devices \
+  --output /path/to/USERNAME/cards
+
+# 업무용 컴퓨터
+python3 src/usage_card.py \
+  --device work-desktop \
+  --state-dir /path/to/USERNAME/cards/devices \
+  --output /path/to/USERNAME/cards
+```
+
+각 실행은 자기 파일만 갱신합니다.
+
+```text
+cards/devices/macbook-home.json
+cards/devices/work-desktop.json
+```
+
+카드는 폴더 안의 모든 장치 원장을 병합해 생성합니다. 동일한 요청이 두 컴퓨터 로그에 복사되어 있고 식별 해시도 같다면 전체 합계에서는 한 번만 반영됩니다. 서로 다른 서비스가 동일 요청에 다른 ID를 부여한 경우에는 자동으로 판별할 수 없습니다.
+
+Git pull, 카드 생성, commit, push까지 처리하는 [갱신 스크립트](scripts/update_profile.sh)도 포함되어 있습니다.
+
+```sh
+chmod +x scripts/update_profile.sh
+PROFILE_REPO=/path/to/USERNAME \
+USAGE_CARD_DEVICE=macbook-home \
+scripts/update_profile.sh
+```
+
+다른 컴퓨터에서는 `USAGE_CARD_DEVICE=work-desktop`처럼 다른 ID를 사용합니다. 스크립트는 프로필 저장소에 커밋되지 않은 변경이 있으면 중단하고, 먼저 `git pull --rebase`를 실행합니다. 두 컴퓨터가 동시에 push하지 않도록 자동 실행 시간을 몇 분씩 다르게 설정하세요.
+
+`cards/devices/*.json`은 공개 프로필 저장소에 함께 올라갑니다. 프롬프트와 코드는 없지만 날짜, 도구명, 모델명, 토큰 수, 해시 식별자가 포함됩니다. 이 정보도 공개하고 싶지 않다면 장치 원장을 별도의 비공개 Git 저장소나 개인 동기화 폴더에 두고, 생성된 SVG만 프로필 저장소에 복사해야 합니다.
+
+## 집계 원칙과 제한
+
+- 전체 토큰, 최근 30일, 활동일 수, 입력/출력/캐시 구성, 26주 잔디, 도구별 합계가 표시됩니다. 도구가 많으면 카드 높이가 늘어납니다. JSON에는 일별·모델별 분석도 포함됩니다.
+- Codex의 누적 카운터에서 증분을 계산합니다. 캐시 입력과 reasoning 출력은 이미 포함된 필드에 다시 더하지 않습니다. 동일 세션의 카운터가 감소하는 로그는 진단에 표시하며, 이후 기존 최대치를 초과하는 부분만 집계합니다.
+- Claude Code는 메시지 ID 기준으로 스트리밍 업데이트를 병합합니다. Gemini는 메시지 ID 기준으로 병합하고, 별도 thoughts를 출력에 포함합니다.
+- 기본적으로 `.usage-state/devices/<device>.json`에 장치별 해시 식별자와 숫자 원장을 저장합니다. 모든 장치 원장을 합칠 때 같은 해시는 한 번만 계산합니다. 이미 집계한 로그 파일이 삭제되어도 기록을 유지하며, 원장 파일을 지우면 해당 장치의 보존 기록이 사라집니다.
+- 수집 이전에 삭제된 로그는 복구하지 못합니다. Codex 로그 파일의 앞부분만 잘린 경우나 포크 세션에 과거 사용량이 복제된 경우에는 정확도가 제한될 수 있습니다. 청구서가 아니라 **현재 읽을 수 있는 로그에 기반한 분석**입니다.
+- 구독료/API 비용은 추정하지 않습니다. 캐시를 포함한 토큰 수이므로 비용과 비례하지 않습니다.
+- 카드와 분석 JSON에는 프롬프트·응답·코드·프로젝트 경로를 쓰지 않습니다. 날짜별 사용량, 모델명, 도구명은 포함되므로 공개할 내용을 선택하세요. 프로필에는 SVG 두 파일만으로 충분합니다.
+- 잘못된 JSONL 줄은 진단 카운트에 기록하고 건너뜁니다. 파일을 읽을 수 없으면 저장하지 않고 실패합니다. 읽는 동안 작성 중인 마지막 줄은 다음 실행에서 다시 읽습니다.
+
+## 검증
+
+```sh
+python3 -m unittest discover -s tests -v
+```
+
+중복 이벤트/복사 로그, 캐시 및 reasoning 중복 방지, 원장 유지, 한국 시간 날짜 변환, Gemini JSON/JSONL, 외부 데이터 검증, 빈 데이터 및 다수 도구의 SVG XML을 테스트합니다.
+
+## 참고
+
+Gemini 형식은 [공식 chatRecordingService](https://github.com/google-gemini/gemini-cli/blob/main/packages/core/src/services/chatRecordingService.ts)를 참고했습니다. GitHub Copilot은 [공식 usage metrics](https://docs.github.com/en/copilot/reference/copilot-usage-metrics/copilot-usage-metrics)의 제공 범위와 계정 권한을 확인한 뒤 공통 형식으로 변환해야 합니다.

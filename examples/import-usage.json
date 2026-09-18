@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "source": "my-cursor-export",
+      "id": "request-001",
+      "tool": "Cursor",
+      "model": "example-model",
+      "timestamp": "2026-09-17T10:00:00+09:00",
+      "input": 12000,
+      "output": 2300,
+      "cache_read": 8000,
+      "cache_write": 0
+    }
+  ]
+}
