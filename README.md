@@ -103,63 +103,34 @@ python3 src/usage_card.py --tools imports --device macbook --import-json /path/t
 
 ## GitHub 프로필에 적용
 
-GitHub CLI 로그인 후 컴퓨터 이름을 하나 정해 최초 한 번만 설정합니다.
+1. 저장소를 clone합니다.
+
+```sh
+git clone https://github.com/92pino/ai-usage-pulse.git
+cd ai-usage-pulse
+```
+
+2. GitHub에 로그인합니다.
 
 ```sh
 gh auth login
+```
+
+3. 이 컴퓨터의 이름을 정해 최초 설정을 실행합니다.
+
+```sh
 ./setup.sh macbook-home
 ```
 
-이후에는 아래 명령 하나만 실행합니다.
+컴퓨터 이름은 `macbook-home`, `work-macbook`, `desktop`처럼 자유롭게 정할 수 있습니다. 설정이 끝나면 GitHub 프로필 README에 카드가 자동으로 등록됩니다.
+
+4. 이후 사용량을 갱신할 때 실행합니다.
 
 ```sh
 ./update.sh
 ```
 
-`setup.sh`는 GitHub 사용자명을 자동 감지하고, 프로필 저장소와 비공개 원장 저장소를 준비한 뒤 첫 카드를 게시합니다. `update.sh`는 두 저장소의 pull, 로컬 로그 집계, 여러 컴퓨터 원장 병합, SVG 생성, commit, push를 모두 처리합니다. README에는 관리용 주석 사이에 카드가 들어갑니다.
-
-```html
-<!-- AI_USAGE_CARD:START -->
-...자동으로 관리되는 카드...
-<!-- AI_USAGE_CARD:END -->
-```
-
-다시 실행하거나 카드 종류를 변경해도 기존 README의 다른 내용은 유지하고 이 영역만 교체합니다. `USAGE_CARD_VARIANT`에는 다음 값을 사용할 수 있습니다.
-
-| 값 | 표시 형태 |
-| --- | --- |
-| `dashboard` | 큰 전체 대시보드 (`combo`와 동일한 구성) |
-| `full` | 846×225 가로형 |
-| `combo` | 첨부 예시와 같은 전체 대시보드, 기본값 |
-| `compact` | 추이와 잔디를 합친 846×195 가로형 |
-| `half` | 423×195 핵심 지표 |
-| `grass` | 423×195 활동 카드 |
-| `half-grass` | 423×335 세로형 |
-| `split` | `half`와 `grass`를 한 줄에 배치 |
-
-README 등록만 따로 하려면 다음 명령을 사용합니다. 이 명령은 commit이나 push를 수행하지 않습니다.
-
-```sh
-python3 scripts/install_readme.py \
-  --repo /path/to/사용자명 \
-  --variant combo
-```
-
-수동으로 적용하려면 생성된 SVG를 프로필 저장소의 `cards/` 폴더에 복사한 뒤 출력 폴더의 `README-snippet.md`에서 원하는 `<picture>` 블록을 README.md에 붙여 넣습니다.
-
-카드를 다른 저장소에 보관한다면 상대 경로 대신 다음 형태의 주소를 사용합니다. 기본 브랜치가 다르면 `main`을 변경하세요.
-
-```text
-https://raw.githubusercontent.com/사용자명/저장소명/main/cards/ai-usage-dark.svg
-```
-
-이 도구는 자동 push나 프로필 수정은 하지 않습니다. 생성 위치를 로컬 프로필 저장소로 직접 지정할 수도 있습니다.
-
-```sh
-python3 src/usage_card.py --output /path/to/profile-repo/cards
-```
-
-정기 갱신은 **사용 로그가 있는 컴퓨터**에서 `update.sh`를 스케줄링하세요. GitHub 호스팅 Actions 러너는 개인 컴퓨터의 로그에 접근할 수 없습니다.
+`update.sh`가 로그 수집, 여러 컴퓨터 사용량 병합, SVG 생성, commit, push를 모두 처리합니다.
 
 ## 여러 컴퓨터에서 하나의 카드 갱신
 

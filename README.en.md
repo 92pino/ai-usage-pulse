@@ -106,49 +106,34 @@ Every record needs nonempty `source`, `id`, `tool`, `model`, and timezone-aware 
 
 ## Install on a GitHub profile
 
-Sign in with GitHub CLI and choose a permanent name for this computer once:
+1. Clone the repository.
+
+```sh
+git clone https://github.com/92pino/ai-usage-pulse.git
+cd ai-usage-pulse
+```
+
+2. Sign in to GitHub.
 
 ```sh
 gh auth login
+```
+
+3. Choose a name for this computer and run the initial setup.
+
+```sh
 ./setup.sh macbook-home
 ```
 
-After setup, every refresh is one command:
+The device name can be anything unique, such as `macbook-home`, `work-macbook`, or `desktop`. Setup automatically installs the card in your GitHub profile README.
+
+4. Refresh your usage whenever you want.
 
 ```sh
 ./update.sh
 ```
 
-`setup.sh` detects your GitHub username, prepares the profile and private ledger repositories, and publishes the first card. `update.sh` pulls both repositories, collects local logs, merges every computer, generates the SVGs, commits, and pushes. The managed block is enclosed by these markers:
-
-```html
-<!-- AI_USAGE_CARD:START -->
-...managed card markup...
-<!-- AI_USAGE_CARD:END -->
-```
-
-Future runs replace only that block. `USAGE_CARD_VARIANT` accepts:
-
-| Value | Layout |
-| --- | --- |
-| `dashboard` | Large dashboard, same composition as `combo` |
-| `full` | 846×225 horizontal card |
-| `combo` | Complete dashboard shown above, default |
-| `compact` | 846×195 pulse and activity map |
-| `half` | 423×195 headline metrics |
-| `grass` | 423×195 activity card |
-| `half-grass` | 423×335 vertical card |
-| `split` | `half` and `grass` side by side |
-
-To edit only the README without committing or pushing:
-
-```sh
-python3 scripts/install_readme.py \
-  --repo /path/to/USERNAME \
-  --variant combo
-```
-
-GitHub-hosted Actions runners cannot read logs stored on your computers. Schedule `update.sh` on each computer that has local usage logs.
+`update.sh` collects logs, merges multiple computers, generates the SVGs, commits, and pushes automatically.
 
 ## Multiple computers, one card
 
